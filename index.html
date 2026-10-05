@@ -29,6 +29,8 @@ h1{margin:0;font-size:30px;color:#3d6688}.sub{margin:4px 0 16px;color:#7b8794;fo
 .chart{width:190px;height:190px;border-radius:50%;margin:12px auto;position:relative;background:#edf3f7}.chart:after{content:"";position:absolute;inset:47px;background:white;border-radius:50%}.chartCenter{position:absolute;z-index:2;inset:0;display:flex;align-items:center;justify-content:center;text-align:center;font-size:12px;font-weight:800;flex-direction:column}.legend{display:grid;gap:7px}.legend div{display:flex;align-items:center;gap:7px;font-size:12px}.dot{width:10px;height:10px;border-radius:50%;display:inline-block}
 .modal{display:none;position:fixed;inset:0;background:rgba(30,45,60,.34);z-index:20;padding:18px;align-items:flex-end;justify-content:center}.modal.show{display:flex}.modalBox{width:min(560px,100%);max-height:86vh;overflow-y:auto;-webkit-overflow-scrolling:touch;padding:18px}.closeTop{float:right}label{display:block;font-size:13px;font-weight:700;margin:10px 0 5px}input,select{width:100%;padding:12px;border:1px solid #dce7ef;border-radius:12px;background:#fff;font:inherit;color:#374151}.row{display:grid;grid-template-columns:1fr 1fr;gap:9px;margin-top:14px}
 @media(max-width:480px){.accountGrid{grid-template-columns:1fr 1fr}.total{font-size:27px}}
+
+.balanceChart{margin-top:16px}.balanceGroup{margin:0 0 18px}.balanceGroup:last-child{margin-bottom:0}.balanceGroupTitle{display:flex;align-items:center;gap:7px;font-weight:800;color:#445675;margin-bottom:10px}.balanceBar{margin:9px 0 13px}.balanceBarTop{display:flex;justify-content:space-between;gap:10px;align-items:center;font-size:13px;margin-bottom:5px}.balanceName{font-weight:700;color:#52617b;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.balanceValue{font-weight:800;color:#53627d;white-space:nowrap}.balanceTrack{height:11px;background:#edf3fb;border-radius:999px;overflow:hidden}.balanceFill{height:100%;border-radius:999px;min-width:0;transition:width .35s ease}.balanceFill.bank{background:linear-gradient(90deg,#8fc9f2,#b9d8ff)}.balanceFill.ewallet{background:linear-gradient(90deg,#f3b8d4,#e7b9ed)}.balanceEmpty{padding:14px;border-radius:16px;background:rgba(244,248,255,.8);color:#8a96aa;text-align:center;font-size:13px}
 </style></head>
 <body>
 <div class="wrap">
@@ -36,7 +38,7 @@ h1{margin:0;font-size:30px;color:#3d6688}.sub{margin:4px 0 16px;color:#7b8794;fo
 <div class="actions"><button class="primary" id="btnExpense">＋ Pengeluaran</button><button class="pink" id="btnIncome">＋ Pemasukan</button></div>
 <button class="secondary" style="width:100%" id="btnOpening">💰 Atur Saldo Awal Rekening & E-wallet</button></div>
 <div class="section"><div class="budgetHead"><h2>🩵 Budget BRI Simpedes</h2><span class="budgetTotal">Rp4.500.000 / bulan</span></div><div class="progress"><i id="budgetProgress" style="width:0%"></i></div><div class="muted" id="budgetSummary"></div><div id="budgetRows"></div></div>
-<div class="section"><h2>📊 Grafik Pengeluaran</h2><div class="muted">Otomatis berdasarkan pengeluaran yang sudah kamu catat</div><div id="chartArea"></div></div>
+<div class="section"><h2>📊 Grafik Pengeluaran</h2><div class="muted">Otomatis berdasarkan pengeluaran yang sudah kamu catat</div><div id="chartArea"></div></div><div class="section"><h2>💰 Grafik Saldo Rekening & E-wallet</h2><div class="muted">Perbandingan saldo saat ini di setiap akun</div><div id="balanceChartArea" class="balanceChart"></div></div>
 <div class="section"><h2>🏦 Bank</h2><div class="accountGrid" id="bank"></div></div><div class="section"><h2>💳 E-wallet</h2><div class="accountGrid" id="ewallet"></div></div>
 <div class="section"><h2>↔️ Transfer</h2><button class="secondary" style="width:100%" id="btnTransfer">Transfer antar akun</button></div>
 <div class="section"><h2>🧾 Transaksi Terbaru</h2><div id="txList"></div></div>
@@ -86,7 +88,7 @@ function render(){
  const total=state.accounts.reduce((s,a)=>s+(Number(a.balance)||0),0);
  document.getElementById("total").textContent=rp(total);document.getElementById("summary").textContent=state.accounts.length+" akun · "+state.tx.length+" transaksi";
  ["bank","ewallet"].forEach(type=>document.getElementById(type).innerHTML=state.accounts.filter(a=>a.type===type).map(a=>`<div class="card"><b>${esc(a.name)}</b><div class="bal">${rp(a.balance)}</div></div>`).join(""));
- renderTx();renderBudgets();renderChart();save();
+ renderTx();renderBudgets();renderChart();renderBalanceChart();save();
 }
 function renderTx(){
  const box=document.getElementById("txList");
@@ -109,6 +111,19 @@ function renderChart(){
  e.forEach(([,v],i)=>{const p=v/total*360;st.push(`${colors[i%colors.length]} ${cur}deg ${cur+p}deg`);cur+=p});
  area.innerHTML=`<div class="chart" style="background:conic-gradient(${st.join(",")})"><div class="chartCenter">Total<strong>${rp(total)}</strong></div></div><div class="legend">${e.map(([n,v],i)=>`<div><span class="dot" style="background:${colors[i%colors.length]}"></span><span>${esc(n)}</span><span style="margin-left:auto">${rp(v)} · ${Math.round(v/total*100)}%</span></div>`).join("")}</div>`;
 }
+
+function renderBalanceChart(){
+ const area=document.getElementById("balanceChartArea");
+ if(!area)return;
+ const bank=state.accounts.filter(a=>a.type==="bank");
+ const ewallet=state.accounts.filter(a=>a.type==="ewallet");
+ const all=[...bank,...ewallet];
+ const max=Math.max(...all.map(a=>Number(a.balance)||0),0);
+ if(max<=0){area.innerHTML='<div class="balanceEmpty">Belum ada saldo yang diatur. Atur saldo awal untuk melihat grafik. 💰</div>';return}
+ const group=(title,icon,items,type)=>`<div class="balanceGroup"><div class="balanceGroupTitle">${icon} ${title}</div>${items.map(a=>{const v=Number(a.balance)||0,p=Math.max(0,Math.min(100,v/max*100));return `<div class="balanceBar"><div class="balanceBarTop"><span class="balanceName">${esc(a.name)}</span><span class="balanceValue">${rp(v)}</span></div><div class="balanceTrack"><div class="balanceFill ${type}" style="width:${p}%"></div></div></div>`}).join("")}</div>`;
+ area.innerHTML=group("Rekening Bank","🏦",bank,"bank")+group("E-wallet","💳",ewallet,"ewallet");
+}
+
 function show(id){document.getElementById(id).classList.add("show")}function hide(id){document.getElementById(id).classList.remove("show")}
 
 function openTx(kind,t=null){
