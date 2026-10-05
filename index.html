@@ -137,11 +137,12 @@ document.getElementById("tx").innerHTML=S.tx.length?S.tx.slice(0,10).map(t=>`<di
 function fill(id){document.getElementById(id).innerHTML=S.accounts.map((a,i)=>`<option value="${i}">${a.name}</option>`).join("")}
 function fillBudget(){document.getElementById("budget").innerHTML='<option value="">Tanpa budget</option>'+BUDGETS.map(b=>`<option value="${b[0]}">${b[2]} ${b[0]}</option>`).join("")}
 function formatMoneyInput(el){
-  const digits=el.value.replace(/\\D/g,"");
+  const digits=String(el.value).replace(/\D/g,"");
   el.value=digits?Number(digits).toLocaleString("id-ID"):"";
 }
 function parseMoney(value){
-  return Number(String(value).replace(/\\./g,"").replace(/,/g,""))||0;
+  const digits=String(value).replace(/\D/g,"");
+  return Number(digits)||0;
 }
 function formatDateID(value){
   if(!value)return "";
@@ -176,7 +177,7 @@ function saveTx(e){
 function openOpening(){
   document.getElementById("openingFields").innerHTML=S.accounts.map((a,i)=>`
     <label>${a.type==="bank"?"🏦":"💳"} ${a.name}</label>
-    <input id="opening_${i}" type="number" min="0" inputmode="numeric" value="${Math.max(0,Number(a.balance)||0)}" placeholder="0">
+    <input id="opening_${i}" type="text" inputmode="numeric" autocomplete="off" value="${Number(a.balance||0).toLocaleString("id-ID")}" placeholder="0" oninput="formatMoneyInput(this)">
   `).join("");
   document.getElementById("om").classList.add("show");
 }
@@ -184,7 +185,7 @@ function closeOpening(){document.getElementById("om").classList.remove("show")}
 function saveOpening(e){
   e.preventDefault();
   S.accounts.forEach((a,i)=>{
-    const v=Number(document.getElementById("opening_"+i).value||0);
+    const v=parseMoney(document.getElementById("opening_"+i).value);
     a.balance=Math.max(0,v);
   });
   render();
