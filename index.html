@@ -15,14 +15,14 @@ section{margin-top:22px}h2{font-size:17px;color:#405579}.grid{display:grid;grid-
 .donut{width:145px;height:145px;border-radius:50%;background:conic-gradient(#dcecff 0 100%);position:relative;margin:auto}
 .donut:after{content:"";position:absolute;inset:35px;background:white;border-radius:50%}
 .donutCenter{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;z-index:2;font-size:12px;font-weight:800;color:#405579;text-align:center;padding:0 35px}
-.chartLegend{display:flex;flex-direction:column;gap:7px;max-height:220px;overflow:auto}
+.chartLegend{display:flex;flex-direction:column;gap:7px;max-height:220px;overflow:auto}.sheet form label{display:block;margin-top:10px}.sheet form input,.sheet form select{margin-bottom:4px}
 .legendItem{display:flex;align-items:center;gap:7px;font-size:12px;color:#52627e}.dot{width:9px;height:9px;border-radius:50%;flex:0 0 9px}.legendAmt{margin-left:auto;font-weight:700;color:#405579}
 .emptyChart{font-size:12px;color:#8995a9;text-align:center;padding:8px 0}
 @media(max-width:560px){.chartWrap{grid-template-columns:1fr}.donut{width:155px;height:155px}}
 </style></head><body><div class="app">
 <h1>BudgetKu 💰</h1><div class="muted">Keuangan keluarga, lebih rapi, terarah, dan terkontrol. 🩵🩷</div>
 <div class="hero"><span>Total seluruh saldo</span><b id="total">Rp0</b><small id="summary">9 akun · 0 transaksi</small></div>
-<div class="actions"><button class="primary" onclick="openTx('expense')">＋ Pengeluaran</button><button class="secondary" onclick="openTx('income')">＋ Pemasukan</button></div><section><div class="budgetBox">
+<div class="actions"><button class="primary" onclick="openTx('expense')">＋ Pengeluaran</button><button class="secondary" onclick="openTx('income')">＋ Pemasukan</button></div><button class="secondary" style="width:100%;margin-top:10px" onclick="openOpening()">💰 Atur Saldo Awal Rekening & E-wallet</button><section><div class="budgetBox">
 <div class="budgetTop"><span class="budgetTitle">🩵 Budget BRI Simpedes</span><span class="budgetTotal">Rp4.500.000 / bulan</span></div>
 <div class="progress"><i id="budgetProgress" style="width:0%"></i></div>
 <div class="tiny" id="budgetSummary">Memuat ringkasan budget...</div>
@@ -42,7 +42,21 @@ section{margin-top:22px}h2{font-size:17px;color:#405579}.grid{display:grid;grid-
 </div>
 <div class="bottom"><button class="primary" onclick="openTx('expense')">＋ Catat transaksi</button><button class="secondary" onclick="openTransfer()">↔ Transfer</button></div>
 
-<div class="modal" id="m"><div class="sheet"><h2 id="mt">Catat transaksi</h2><form onsubmit="saveTx(event)"><input id="kind" type="hidden"><label>Nominal</label><input id="amt" type="number" min="1" required><label>Keterangan</label><input id="note" required placeholder="Contoh: makan siang"><label>Akun</label><select id="acct"></select><label>Budget</label><select id="budget"><option value="">Tanpa budget</option></select><div class="row"><button type="button" class="secondary" onclick="closeM()">Batal</button><button class="primary">Simpan</button></div></form></div></div>
+<div class="modal" id="m"><div class="sheet"><h2 id="mt">Catat transaksi</h2><form onsubmit="saveTx(event)">
+<input id="kind" type="hidden">
+<label>Nominal</label><input id="amt" type="text" inputmode="numeric" autocomplete="off" placeholder="Contoh: 19.000" required oninput="formatMoneyInput(this)">
+<label>Tanggal</label><input id="txdate" type="date" required>
+<label>Keterangan</label><input id="note" required placeholder="Contoh: makan siang">
+<label>Akun</label><select id="acct"></select>
+<label>Budget</label><select id="budget"><option value="">Tanpa budget</option></select>
+<div class="row"><button type="button" class="secondary" onclick="closeM()">Batal</button><button class="primary">Simpan</button></div>
+</form></div></div>
+<div class="modal" id="om"><div class="sheet"><h2>💰 Saldo Awal</h2>
+<p class="muted" style="margin-bottom:14px">Masukkan saldo yang tersedia saat mulai memakai BudgetKu. Saldo awal tidak dihitung sebagai pemasukan.</p>
+<form onsubmit="saveOpening(event)">
+<div id="openingFields"></div>
+<div class="row"><button type="button" class="secondary" onclick="closeOpening()">Batal</button><button class="primary">Simpan Saldo</button></div>
+</form></div></div>
 <div class="modal" id="tm"><div class="sheet"><h2>Transfer antar akun</h2><form onsubmit="saveTr(event)"><label>Nominal</label><input id="ta" type="number" min="1" required><label>Dari</label><select id="from"></select><label>Ke</label><select id="to"></select><label>Catatan</label><input id="tn" placeholder="Opsional"><div class="row"><button type="button" class="secondary" onclick="closeT()">Batal</button><button class="primary">Transfer</button></div></form></div></div>
 
 <script>
@@ -105,12 +119,63 @@ function renderSpendingChart(){
 
 function render(){let total=S.accounts.reduce((x,a)=>x+a.balance,0);document.getElementById("total").textContent=rp(total);document.getElementById("summary").textContent=S.accounts.length+" akun · "+S.tx.length+" transaksi";
 ["bank","ewallet"].forEach(t=>document.getElementById(t).innerHTML=S.accounts.filter(a=>a.type==t).map(a=>`<div class="card"><b>${a.name}</b><div class="bal">${rp(a.balance)}</div></div>`).join(""));
-document.getElementById("tx").innerHTML=S.tx.length?S.tx.slice(0,10).map(t=>`<div class="tx"><span><b>${t.note}</b><br><small>${t.account}${t.budget?" · "+t.budget:""}</small></span><b class="${t.kind}">${t.kind=="income"?"+":"-"} ${rp(t.amount)}</b></div>`).join(""):"<div class='muted'>Belum ada transaksi.</div>";localStorage.setItem(K,JSON.stringify(S));renderBudgets();renderSpendingChart()}
+document.getElementById("tx").innerHTML=S.tx.length?S.tx.slice(0,10).map(t=>`<div class="tx"><span><b>${t.note}</b><br><small>${t.date?formatDateID(t.date):""}${t.date?" · ":""}${t.account}${t.budget?" · "+t.budget:""}</small></span><b class="${t.kind}">${t.kind=="income"?"+":"-"} ${rp(t.amount)}</b></div>`).join(""):"<div class='muted'>Belum ada transaksi.</div>";localStorage.setItem(K,JSON.stringify(S));renderBudgets();renderSpendingChart()}
 function fill(id){document.getElementById(id).innerHTML=S.accounts.map((a,i)=>`<option value="${i}">${a.name}</option>`).join("")}
 function fillBudget(){document.getElementById("budget").innerHTML='<option value="">Tanpa budget</option>'+BUDGETS.map(b=>`<option value="${b[0]}">${b[2]} ${b[0]}</option>`).join("")}
-function openTx(k){document.getElementById("kind").value=k;document.getElementById("mt").textContent=k=="income"?"＋ Pemasukan":"－ Pengeluaran";fill("acct");fillBudget();document.getElementById("budget").value="";document.getElementById("m").classList.add("show")}
+function formatMoneyInput(el){
+  const digits=el.value.replace(/\\D/g,"");
+  el.value=digits?Number(digits).toLocaleString("id-ID"):"";
+}
+function parseMoney(value){
+  return Number(String(value).replace(/\\./g,"").replace(/,/g,""))||0;
+}
+function formatDateID(value){
+  if(!value)return "";
+  const p=value.split("-");
+  return p.length===3?`${p[2]}/${p[1]}/${p[0]}`:value;
+}
+function todayISO(){
+  const d=new Date();
+  const local=new Date(d.getTime()-d.getTimezoneOffset()*60000);
+  return local.toISOString().slice(0,10);
+}
+function openTx(k){
+  document.getElementById("kind").value=k;
+  document.getElementById("mt").textContent=k=="income"?"＋ Pemasukan":"－ Pengeluaran";
+  document.getElementById("amt").value="";
+  document.getElementById("txdate").value=todayISO();
+  document.getElementById("note").value="";
+  fill("acct");fillBudget();document.getElementById("budget").value="";
+  document.getElementById("m").classList.add("show");
+}
 function closeM(){document.getElementById("m").classList.remove("show")}
-function saveTx(e){e.preventDefault();let k=kind.value,n=+amt.value,i=+acct.value,b=document.getElementById("budget").value;if(!n||n<1)return;if(k=="expense"&&S.accounts[i].balance<n)return alert("Saldo tidak cukup");S.accounts[i].balance+=k=="income"?n:-n;S.tx.unshift({kind:k,amount:n,note:note.value,account:S.accounts[i].name,budget:b});render();closeM()}
+function saveTx(e){
+  e.preventDefault();
+  let k=kind.value,n=parseMoney(amt.value),i=+acct.value,b=document.getElementById("budget").value,d=document.getElementById("txdate").value;
+  if(!n||n<1)return alert("Masukkan nominal yang valid");
+  if(!d)return alert("Pilih tanggal");
+  if(k=="expense"&&S.accounts[i].balance<n)return alert("Saldo tidak cukup");
+  S.accounts[i].balance+=k=="income"?n:-n;
+  S.tx.unshift({kind:k,amount:n,note:note.value,account:S.accounts[i].name,budget:b,date:d});
+  render();closeM();
+}
+function openOpening(){
+  document.getElementById("openingFields").innerHTML=S.accounts.map((a,i)=>`
+    <label>${a.type==="bank"?"🏦":"💳"} ${a.name}</label>
+    <input id="opening_${i}" type="number" min="0" inputmode="numeric" value="${Math.max(0,Number(a.balance)||0)}" placeholder="0">
+  `).join("");
+  document.getElementById("om").classList.add("show");
+}
+function closeOpening(){document.getElementById("om").classList.remove("show")}
+function saveOpening(e){
+  e.preventDefault();
+  S.accounts.forEach((a,i)=>{
+    const v=Number(document.getElementById("opening_"+i).value||0);
+    a.balance=Math.max(0,v);
+  });
+  render();
+  closeOpening();
+}
 function openTransfer(){fill("from");fill("to");document.getElementById("tm").classList.add("show")}
 function closeT(){document.getElementById("tm").classList.remove("show")}
 function saveTr(e){e.preventDefault();let n=+ta.value,f=+from.value,t=+to.value;if(f==t)return alert("Pilih akun yang berbeda");if(S.accounts[f].balance<n)return alert("Saldo tidak cukup");S.accounts[f].balance-=n;S.accounts[t].balance+=n;S.tx.unshift({kind:"transfer",amount:n,note:tn.value||"Transfer antar akun",account:S.accounts[f].name+" → "+S.accounts[t].name});render();closeT()}
