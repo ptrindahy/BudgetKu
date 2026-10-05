@@ -266,4 +266,40 @@ txList.onclick=e=>{
 };
 document.querySelectorAll(".modal").forEach(m=>m.addEventListener("click",e=>{if(e.target===m)m.classList.remove("show")}));
 render();
+
+
+// Main menu interactions
+(function(){
+  const menuExpense=document.getElementById('menuPencatatan');
+  const menuTarget=document.getElementById('menuTarget');
+  const panelExpense=document.getElementById('pencatatanPanel');
+  const panelTarget=document.getElementById('targetPanel');
+  if(!menuExpense || !menuTarget || !panelExpense || !panelTarget) return;
+
+  function toggle(panel, card, otherPanel, otherCard){
+    const willOpen=!panel.classList.contains('show');
+    otherPanel.classList.remove('show');
+    otherCard.classList.remove('active');
+    panel.classList.toggle('show',willOpen);
+    card.classList.toggle('active',willOpen);
+    if(willOpen){
+      setTimeout(()=>panel.scrollIntoView({behavior:'smooth',block:'start'}),50);
+    }
+  }
+  menuExpense.addEventListener('click',()=>toggle(panelExpense,menuExpense,panelTarget,menuTarget));
+  menuTarget.addEventListener('click',()=>toggle(panelTarget,menuTarget,panelExpense,menuExpense));
+
+  document.addEventListener('click',function(e){
+    const btn=e.target.closest('[data-target]');
+    if(!btn) return;
+    const name=btn.getAttribute('data-target');
+    const current=getTargets()[name]||0;
+    const answer=prompt('Target tabungan '+name+'\nMasukkan nominal target (Rp):',current?String(current):'');
+    if(answer===null)return;
+    const value=Number(String(answer).replace(/\D/g,''))||0;
+    setTarget(name,value);
+    renderTargets();
+  });
+})();
+
 </script></body></html>
