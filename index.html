@@ -31,17 +31,87 @@ h1{margin:0;font-size:30px;color:#3d6688}.sub{margin:4px 0 16px;color:#7b8794;fo
 @media(max-width:480px){.accountGrid{grid-template-columns:1fr 1fr}.total{font-size:27px}}
 
 .balanceChart{margin-top:16px}.balanceGroup{margin:0 0 18px}.balanceGroup:last-child{margin-bottom:0}.balanceGroupTitle{display:flex;align-items:center;gap:7px;font-weight:800;color:#445675;margin-bottom:10px}.balanceBar{margin:9px 0 13px}.balanceBarTop{display:flex;justify-content:space-between;gap:10px;align-items:center;font-size:13px;margin-bottom:5px}.balanceName{font-weight:700;color:#52617b;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.balanceValue{font-weight:800;color:#53627d;white-space:nowrap}.balanceTrack{height:11px;background:#edf3fb;border-radius:999px;overflow:hidden}.balanceFill{height:100%;border-radius:999px;min-width:0;transition:width .35s ease}.balanceFill.bank{background:linear-gradient(90deg,#8fc9f2,#b9d8ff)}.balanceFill.ewallet{background:linear-gradient(90deg,#f3b8d4,#e7b9ed)}.balanceEmpty{padding:14px;border-radius:16px;background:rgba(244,248,255,.8);color:#8a96aa;text-align:center;font-size:13px}
+
+/* Two main BudgetKu menus */
+.mainMenu{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin:16px 0}
+.mainMenuCard{border:0;border-radius:22px;padding:17px 15px;display:flex;align-items:center;gap:11px;text-align:left;cursor:pointer;box-shadow:0 8px 22px rgba(100,130,160,.09);transition:.2s;min-height:86px}
+.mainMenuCard:active{transform:scale(.98)}
+.expenseMenu{background:linear-gradient(135deg,#dff3ff,#c8e5f8);color:#405675}
+.targetMenu{background:linear-gradient(135deg,#ffe5f1,#f5d7ec);color:#73516b}
+.menuIcon{font-size:30px;line-height:1}
+.menuText{display:flex;flex-direction:column;gap:4px;min-width:0}
+.menuText strong{font-size:16px;line-height:1.15}
+.menuText small{font-size:11px;line-height:1.3;opacity:.72}
+.menuArrow{margin-left:auto;font-size:22px;font-weight:800;transition:.2s}
+.mainMenuCard.active .menuArrow{transform:rotate(180deg)}
+.menuPanel{display:none}
+.menuPanel.show{display:block}
+.targetSection{background:rgba(255,255,255,.91)}
+.targetCards{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.targetCard{background:linear-gradient(145deg,rgba(235,248,255,.95),rgba(255,238,247,.95));border:1px solid rgba(210,220,238,.75);border-radius:18px;padding:14px;box-shadow:0 6px 18px rgba(100,120,150,.07)}
+.targetCardHead{display:flex;justify-content:space-between;gap:7px;align-items:flex-start}
+.targetCardName{font-weight:800;color:#405270;font-size:14px;line-height:1.25}
+.targetEditBtn{border:0;border-radius:10px;padding:6px 8px;background:#fff;color:#7b6580;font-weight:700;font-size:10px;cursor:pointer;white-space:nowrap}
+.targetMeta{margin-top:12px;font-size:11px;color:#7b879c;display:flex;justify-content:space-between;gap:8px}
+.targetMeta b{color:#53627d}
+.targetTrack{height:9px;border-radius:99px;background:#edf2f8;overflow:hidden;margin-top:7px}
+.targetFill{height:100%;border-radius:99px;background:linear-gradient(90deg,#91ccef,#efb3d1);transition:width .3s}
+.targetBottom{display:flex;justify-content:space-between;margin-top:7px;font-size:10px;color:#8791a4}
+.targetPct{font-weight:800;color:#8a6680}
+@media(max-width:560px){
+  .mainMenu{gap:9px}
+  .mainMenuCard{padding:14px 11px;min-height:82px;border-radius:19px}
+  .menuIcon{font-size:25px}
+  .menuText strong{font-size:13px}
+  .menuText small{font-size:9px}
+  .targetCards{grid-template-columns:1fr 1fr;gap:9px}
+  .targetCard{padding:11px}
+  .targetCardName{font-size:11px}
+  .targetMeta{font-size:9px}
+  .targetBottom{font-size:9px}
+}
+
 </style></head>
 <body>
 <div class="wrap">
 <div class="hero"><h1>BudgetKu 💰</h1><div class="sub">Keuangan keluarga, lebih rapi, terarah, dan terkontrol. 🩵🩷</div><div class="muted" id="summary"></div><div class="total" id="total">Rp0</div>
 <div class="actions"><button class="primary" id="btnExpense">＋ Pengeluaran</button><button class="pink" id="btnIncome">＋ Pemasukan</button></div>
 <button class="secondary" style="width:100%" id="btnOpening">💰 Atur Saldo Awal Rekening & E-wallet</button></div>
+
+<div class="mainMenu">
+  <button class="mainMenuCard expenseMenu" id="menuPencatatan" type="button">
+    <span class="menuIcon">🧾</span>
+    <span class="menuText"><strong>Pencatatan Pengeluaran</strong><small>Budget, transaksi, grafik & rekening</small></span>
+    <span class="menuArrow" id="arrowPencatatan">⌄</span>
+  </button>
+
+  <button class="mainMenuCard targetMenu" id="menuTarget" type="button">
+    <span class="menuIcon">🎯</span>
+    <span class="menuText"><strong>Target Tabungan</strong><small>Pantau 4 rekening tabungan pilihan</small></span>
+    <span class="menuArrow" id="arrowTarget">⌄</span>
+  </button>
+</div>
+
+<div class="menuPanel" id="pencatatanPanel">
 <div class="section"><div class="budgetHead"><h2>🩵 Budget BRI Simpedes</h2><span class="budgetTotal">Rp4.500.000 / bulan</span></div><div class="progress"><i id="budgetProgress" style="width:0%"></i></div><div class="muted" id="budgetSummary"></div><div id="budgetRows"></div></div>
 <div class="section"><h2>📊 Grafik Pengeluaran</h2><div class="muted">Otomatis berdasarkan pengeluaran yang sudah kamu catat</div><div id="chartArea"></div></div><div class="section"><h2>💰 Grafik Saldo Rekening & E-wallet</h2><div class="muted">Perbandingan saldo saat ini di setiap akun</div><div id="balanceChartArea" class="balanceChart"></div></div>
 <div class="section"><h2>🏦 Bank</h2><div class="accountGrid" id="bank"></div></div><div class="section"><h2>💳 E-wallet</h2><div class="accountGrid" id="ewallet"></div></div>
 <div class="section"><h2>↔️ Transfer</h2><button class="secondary" style="width:100%" id="btnTransfer">Transfer antar akun</button></div>
 <div class="section"><h2>🧾 Transaksi Terbaru</h2><div id="txList"></div></div>
+</div>
+
+</div>
+
+<div class="menuPanel targetPanel" id="targetPanel">
+  <div class="section targetSection">
+    <div class="targetTitle">
+      <div>
+        <h2>🎯 Target Tabungan</h2>
+        <div class="muted">Khusus untuk rekening tabungan pilihanmu.</div>
+      </div>
+    </div>
+    <div id="targetCards"></div>
+  </div>
 </div>
 
 <div class="modal" id="txModal"><div class="modalBox"><button class="secondary closeTop" id="txClose">Tutup</button><h2 id="txTitle">Catat transaksi</h2><form id="txForm"><input type="hidden" id="txKind">
@@ -84,11 +154,51 @@ function esc(v){return String(v??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&l
 function fillAccounts(s){s.innerHTML=state.accounts.map((a,i)=>`<option value="${i}">${esc(a.name)}</option>`).join("")}
 function fillBudgets(s){s.innerHTML='<option value="">Tanpa budget</option>'+BUDGETS.map(b=>`<option value="${esc(b[0])}">${b[2]} ${esc(b[0])}</option>`).join("")}
 
+
+const TARGET_KEY="budgetku_targets_v1";
+const TARGET_ACCOUNTS=["BRI Junio","Jenius Dana Darurat","Jenius Kontrakan","Simpanan Simpedes"];
+
+function getTargets(){
+  try{return JSON.parse(localStorage.getItem(TARGET_KEY)||"{}")}catch(e){return {}}
+}
+function setTarget(name,value){
+  const x=getTargets();
+  if(value>0)x[name]=value;else delete x[name];
+  localStorage.setItem(TARGET_KEY,JSON.stringify(x));
+}
+function renderTargets(){
+  const box=document.getElementById("targetCards");
+  if(!box)return;
+  const targets=getTargets();
+  const icons={"BRI Junio":"💗","Jenius Dana Darurat":"🛡️","Jenius Kontrakan":"🏠","Simpanan Simpedes":"💰"};
+  box.className="targetCards";
+  box.innerHTML=TARGET_ACCOUNTS.map(name=>{
+    const acc=state.accounts.find(a=>a.name===name);
+    const saldo=Number(acc?.balance)||0;
+    const target=Number(targets[name])||0;
+    const pct=target>0?Math.min(100,saldo/target*100):0;
+    const kurang=Math.max(0,target-saldo);
+    return `<div class="targetCard">
+      <div class="targetCardHead">
+        <div class="targetCardName">${icons[name]} ${esc(name)}</div>
+        <button class="targetEditBtn" type="button" data-target="${esc(name)}">${target?"Edit":"Atur target"}</button>
+      </div>
+      <div class="targetMeta"><span>Terkumpul</span><b>${rp(saldo)}</b></div>
+      <div class="targetMeta"><span>Target</span><b>${target?rp(target):"Belum diatur"}</b></div>
+      <div class="targetTrack"><div class="targetFill" style="width:${pct}%"></div></div>
+      <div class="targetBottom">
+        <span>${target?(pct>=100?"🎉 Target tercapai!":"Kurang "+rp(kurang)):"Atur nominal target untuk mulai"}</span>
+        <span class="targetPct">${target?pct.toFixed(1)+"%":"—"}</span>
+      </div>
+    </div>`;
+  }).join("");
+}
+
 function render(){
  const total=state.accounts.reduce((s,a)=>s+(Number(a.balance)||0),0);
  document.getElementById("total").textContent=rp(total);document.getElementById("summary").textContent=state.accounts.length+" akun · "+state.tx.length+" transaksi";
  ["bank","ewallet"].forEach(type=>document.getElementById(type).innerHTML=state.accounts.filter(a=>a.type===type).map(a=>`<div class="card"><b>${esc(a.name)}</b><div class="bal">${rp(a.balance)}</div></div>`).join(""));
- renderTx();renderBudgets();renderChart();renderBalanceChart();save();
+ renderTx();renderBudgets();renderChart();renderBalanceChart();renderTargets();save();
 }
 function renderTx(){
  const box=document.getElementById("txList");
