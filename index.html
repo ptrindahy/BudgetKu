@@ -33,7 +33,7 @@ section{margin-top:22px}h2{font-size:17px;color:#405579}.grid{display:grid;grid-
   overflow-y: auto !important;
 }
 </style>
-</head><body><div class="app">
+<style>.miniBtn{border:0;background:#eef6ff;border-radius:10px;padding:6px 8px;font-size:13px}.miniBtn.danger{background:#fff0f3}</style></head><body><div class="app">
 <h1>BudgetKu 💰</h1><div class="muted">Keuangan keluarga, lebih rapi, terarah, dan terkontrol. 🩵🩷</div>
 <div class="hero"><span>Total seluruh saldo</span><b id="total">Rp0</b><small id="summary">9 akun · 0 transaksi</small></div>
 <div class="actions"><button class="primary" onclick="openTx('expense')">＋ Pengeluaran</button><button class="secondary" onclick="openTx('income')">＋ Pemasukan</button></div><button class="secondary" style="width:100%;margin-top:10px" onclick="openOpening()">💰 Atur Saldo Awal Rekening & E-wallet</button><section><div class="budgetBox">
@@ -71,7 +71,7 @@ section{margin-top:22px}h2{font-size:17px;color:#405579}.grid{display:grid;grid-
 <div id="openingFields"></div>
 <div class="row"><button type="button" class="secondary" onclick="closeOpening()">Batal</button><button class="primary">Simpan Saldo</button></div>
 </form></div></div>
-<div class="modal" id="tm"><div class="sheet"><h2>Transfer antar akun</h2><form onsubmit="saveTr(event)"><label>Nominal</label><input id="ta" type="number" min="1" required><label>Dari</label><select id="from"></select><label>Ke</label><select id="to"></select><label>Catatan</label><input id="tn" placeholder="Opsional"><div class="row"><button type="button" class="secondary" onclick="closeT()">Batal</button><button class="primary">Transfer</button></div></form></div></div>
+<div class="modal" id="tm"><div class="sheet"><h2>Transfer antar akun</h2><form onsubmit="saveTr(event)"><label>Nominal</label><input id="ta" type="text" inputmode="numeric" autocomplete="off" placeholder="Contoh: 250.000" required oninput="formatMoneyInput(this)"><label>Dari</label><select id="from"></select><label>Ke</label><select id="to"></select><label>Catatan</label><input id="tn" placeholder="Opsional"><div class="row"><button type="button" class="secondary" onclick="closeT()">Batal</button><button class="primary">Transfer</button></div></form></div></div>
 
 <script>
 const A=[{name:"BRI Simpedes",type:"bank",balance:0},{name:"Simpanan Simpedes",type:"bank",balance:0},{name:"BRI Junio",type:"bank",balance:0},{name:"Jenius Kontrakan",type:"bank",balance:0},{name:"Jenius Dana Darurat",type:"bank",balance:0},{name:"Mandiri",type:"bank",balance:0},{name:"SeaBank",type:"bank",balance:0},{name:"ShopeePay",type:"ewallet",balance:0},{name:"GoPay",type:"ewallet",balance:0},{name:"OVO",type:"ewallet",balance:0}];const K="budgetku_live";let S=JSON.parse(localStorage.getItem(K)||"null")||{accounts:A,tx:[]};
@@ -136,7 +136,7 @@ function renderSpendingChart(){
 
 function render(){let total=S.accounts.reduce((x,a)=>x+a.balance,0);document.getElementById("total").textContent=rp(total);document.getElementById("summary").textContent=S.accounts.length+" akun · "+S.tx.length+" transaksi";
 ["bank","ewallet"].forEach(t=>document.getElementById(t).innerHTML=S.accounts.filter(a=>a.type==t).map(a=>`<div class="card"><b>${a.name}</b><div class="bal">${rp(a.balance)}</div></div>`).join(""));
-document.getElementById("tx").innerHTML=S.tx.length?S.tx.slice(0,10).map(t=>`<div class="tx"><span><b>${t.note}</b><br><small>${t.date?formatDateID(t.date):""}${t.date?" · ":""}${t.account}${t.budget?" · "+t.budget:""}</small></span><b class="${t.kind}">${t.kind=="income"?"+":"-"} ${rp(t.amount)}</b></div>`).join(""):"<div class='muted'>Belum ada transaksi.</div>";localStorage.setItem(K,JSON.stringify(S));renderBudgets();renderSpendingChart()}
+document.getElementById("tx").innerHTML=S.tx.length?S.tx.slice(0,10).map((t,idx)=>`<div class="tx"><span><b>${t.note}</b><br><small>${t.date?formatDateID(t.date):""}${t.date?" · ":""}${t.account}${t.budget?" · "+t.budget:""}</small></span><b class="${t.kind}">${t.kind=="income"?"+":t.kind=="expense"?"-":""} ${rp(t.amount)}</b><button type="button" class="miniBtn" onclick="editTx(${idx})">✏️</button><button type="button" class="miniBtn danger" onclick="deleteTx(${idx})">🗑️</button></span></div>`).join(""):"<div class='muted'>Belum ada transaksi.</div>";localStorage.setItem(K,JSON.stringify(S));renderBudgets();renderSpendingChart()}
 function fill(id){document.getElementById(id).innerHTML=S.accounts.map((a,i)=>`<option value="${i}">${a.name}</option>`).join("")}
 function fillBudget(){document.getElementById("budget").innerHTML='<option value="">Tanpa budget</option>'+BUDGETS.map(b=>`<option value="${b[0]}">${b[2]} ${b[0]}</option>`).join("")}
 function formatMoneyInput(el){
@@ -196,6 +196,31 @@ function saveOpening(e){
 }
 function openTransfer(){fill("from");fill("to");document.getElementById("tm").classList.add("show")}
 function closeT(){document.getElementById("tm").classList.remove("show")}
-function saveTr(e){e.preventDefault();let n=+ta.value,f=+from.value,t=+to.value;if(f==t)return alert("Pilih akun yang berbeda");if(S.accounts[f].balance<n)return alert("Saldo tidak cukup");S.accounts[f].balance-=n;S.accounts[t].balance+=n;S.tx.unshift({kind:"transfer",amount:n,note:tn.value||"Transfer antar akun",account:S.accounts[f].name+" → "+S.accounts[t].name});render();closeT()}
+
+function editTx(displayIndex){
+  const t=S.tx.slice(0,10)[displayIndex],ri=S.tx.indexOf(t); if(ri<0)return;
+  if(t.kind==="transfer"){
+    const f=S.accounts.findIndex(a=>a.name===t.account),to=S.accounts.findIndex(a=>a.name===t.to);
+    if(f>=0&&to>=0){S.accounts[f].balance+=t.amount;S.accounts[to].balance-=t.amount;}
+    S.tx.splice(ri,1);render();openT();ta.value=Number(t.amount).toLocaleString("id-ID");from.value=f;to.value=to;
+  }else{
+    const ai=S.accounts.findIndex(a=>a.name===t.account);
+    if(ai>=0)S.accounts[ai].balance+=t.kind==="income"?-t.amount:t.amount;
+    S.tx.splice(ri,1);render();openTx(t.kind);
+    amt.value=Number(t.amount).toLocaleString("id-ID");txdate.value=t.date||todayISO();note.value=t.note||"";acct.value=ai;budget.value=t.budget||"";
+  }
+}
+function deleteTx(displayIndex){
+  const t=S.tx.slice(0,10)[displayIndex],ri=S.tx.indexOf(t);if(ri<0||!confirm("Hapus transaksi ini?"))return;
+  if(t.kind==="transfer"){
+    const f=S.accounts.findIndex(a=>a.name===t.account),to=S.accounts.findIndex(a=>a.name===t.to);
+    if(f>=0&&to>=0){S.accounts[f].balance+=t.amount;S.accounts[to].balance-=t.amount;}
+  }else{
+    const ai=S.accounts.findIndex(a=>a.name===t.account);
+    if(ai>=0)S.accounts[ai].balance+=t.kind==="income"?-t.amount:t.amount;
+  }
+  S.tx.splice(ri,1);render();
+}
+function saveTr(e){e.preventDefault();let n=parseMoney(ta.value),f=+from.value,t=+to.value;if(!n||n<1)return alert("Masukkan nominal yang valid");if(f==t)return alert("Pilih akun yang berbeda");if(S.accounts[f].balance<n)return alert("Saldo tidak cukup");S.accounts[f].balance-=n;S.accounts[t].balance+=n;S.tx.unshift({kind:"transfer",amount:n,note:tn.value||"Transfer antar akun",account:S.accounts[f].name,to:S.accounts[t].name,date:todayISO()});render();closeT()});render();closeT()}
 render();
 </script></body></html>
