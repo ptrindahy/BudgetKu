@@ -26,6 +26,22 @@ h1{margin:0;font-size:30px;color:#3d6688}.sub{margin:4px 0 16px;color:#7b8794;fo
 .budgetHead{display:flex;justify-content:space-between;gap:10px;align-items:center}.budgetTotal{font-weight:800;font-size:13px}.progress{height:9px;background:#edf3f7;border-radius:99px;overflow:hidden;margin:12px 0}.progress i{display:block;height:100%;background:linear-gradient(90deg,#a9d8f0,#f3b9d0);border-radius:99px}
 .budgetRow{padding:10px 0;border-bottom:1px solid #edf1f4}.budgetRow:last-child{border-bottom:0}.budgetLine{display:flex;justify-content:space-between;font-size:13px}.over{color:#c94e68;font-weight:800}
 .tx{display:flex;justify-content:space-between;align-items:center;gap:8px;padding:12px 0;border-bottom:1px solid #edf1f4}.tx:last-child{border-bottom:0}.tx small{color:#8a96a3;line-height:1.6}.income{color:#3b8b66}.expense{color:#c85c73}.transfer{color:#557fa1}.txBtns{display:flex;gap:5px;align-items:center;white-space:nowrap}.mini{padding:7px 8px;border-radius:10px;font-size:12px}
+.tx{padding:9px 0}
+.tx > div:first-child b{font-size:13px}
+.tx small{font-size:11px;line-height:1.45}
+.txBtns b{font-size:12px}
+.txBtns .mini{padding:5px 6px;font-size:11px}
+.txFilter{background:#f8fbfd;border:1px solid #e5eef4;border-radius:14px;padding:10px;margin:0 0 10px}
+.txFilterTitle{font-size:12px;font-weight:800;color:#4f6f82;margin-bottom:7px}
+.txFilterGrid{display:grid;grid-template-columns:1fr 1fr;gap:7px}
+.txFilter label{font-size:10px;color:#8293a0;display:block;margin-bottom:3px}
+.txFilter input,.txFilter select{width:100%;box-sizing:border-box;border:1px solid #dce8ef;border-radius:9px;background:white;padding:7px 8px;font-size:11px;color:#405b6b}
+.txFilterActions{display:flex;gap:7px;margin-top:7px}
+.txFilterActions button{flex:1;padding:7px 9px;border-radius:9px;border:0;font-size:11px;font-weight:700}
+.txFilterReset{background:#edf5fa;color:#456477}
+.txFilterCount{font-size:10px;color:#8a96a3;margin-top:6px}
+@media(max-width:380px){.txFilterGrid{grid-template-columns:1fr}.tx > div:first-child b{font-size:12px}.tx small{font-size:10px}}
+
 .chart{width:190px;height:190px;border-radius:50%;margin:12px auto;position:relative;background:#edf3f7}.chart:after{content:"";position:absolute;inset:47px;background:white;border-radius:50%}.chartCenter{position:absolute;z-index:2;inset:0;display:flex;align-items:center;justify-content:center;text-align:center;font-size:12px;font-weight:800;flex-direction:column}.legend{display:grid;gap:7px}.legend div{display:flex;align-items:center;gap:7px;font-size:12px}.dot{width:10px;height:10px;border-radius:50%;display:inline-block}
 .modal{display:none;position:fixed;inset:0;background:rgba(30,45,60,.34);z-index:20;padding:18px;align-items:flex-end;justify-content:center}.modal.show{display:flex}.modalBox{width:min(560px,100%);max-height:86vh;overflow-y:auto;-webkit-overflow-scrolling:touch;padding:18px}.closeTop{float:right}label{display:block;font-size:13px;font-weight:700;margin:10px 0 5px}input,select{width:100%;padding:12px;border:1px solid #dce7ef;border-radius:12px;background:#fff;font:inherit;color:#374151}.row{display:grid;grid-template-columns:1fr 1fr;gap:9px;margin-top:14px}
 @media(max-width:480px){.accountGrid{grid-template-columns:1fr 1fr}.total{font-size:27px}}
@@ -121,7 +137,20 @@ h1{margin:0;font-size:30px;color:#3d6688}.sub{margin:4px 0 16px;color:#7b8794;fo
 <div class="section"><h2>📊 Grafik Pengeluaran</h2><div class="muted">Otomatis berdasarkan pengeluaran yang sudah kamu catat</div><div id="chartArea"></div></div><div class="section"><h2>💰 Grafik Saldo Rekening & E-wallet</h2><div class="muted">Perbandingan saldo saat ini di setiap akun</div><div id="balanceChartArea" class="balanceChart"></div></div>
 <div class="section"><h2>🏦 Bank</h2><div class="accountGrid" id="bank"></div></div><div class="section"><h2>💳 E-wallet</h2><div class="accountGrid" id="ewallet"></div></div>
 <div class="section"><h2>↔️ Transfer</h2><button class="secondary" style="width:100%" id="btnTransfer">Transfer antar akun</button></div>
-<div class="section"><h2>🧾 Transaksi Terbaru</h2><div id="txList"></div></div>
+<div class="section"><h2>🧾 Transaksi Terbaru</h2>
+<div class="txFilter">
+  <div class="txFilterTitle">🔎 Filter Transaksi</div>
+  <div class="txFilterGrid">
+    <div><label for="txFilterFrom">Dari tanggal</label><input id="txFilterFrom" type="date"></div>
+    <div><label for="txFilterTo">Sampai tanggal</label><input id="txFilterTo" type="date"></div>
+    <div><label for="txFilterBudget">Budget</label><select id="txFilterBudget"><option value="">Semua budget</option></select></div>
+  </div>
+  <div class="txFilterActions">
+    <button type="button" class="txFilterReset" id="txFilterReset">↺ Reset Filter</button>
+  </div>
+  <div class="txFilterCount" id="txFilterCount"></div>
+</div>
+<div id="txList"></div></div>
 </div>
 
 </div>
@@ -224,10 +253,43 @@ function render(){
  ["bank","ewallet"].forEach(type=>document.getElementById(type).innerHTML=state.accounts.filter(a=>a.type===type).map(a=>`<div class="card"><b>${esc(a.name)}</b><div class="bal">${rp(a.balance)}</div></div>`).join(""));
  renderTx();renderBudgets();renderChart();renderBalanceChart();renderTargets();save();
 }
+const txFilters={from:"",to:"",budget:""};
+
+function fillTxBudgetFilter(){
+ const s=document.getElementById("txFilterBudget");
+ if(!s)return;
+ const current=txFilters.budget;
+ s.innerHTML='<option value="">Semua budget</option>'+
+   BUDGETS.map(b=>`<option value="${esc(b[0])}">${b[2]} ${esc(b[0])}</option>`).join("");
+ s.value=BUDGETS.some(b=>b[0]===current)?current:"";
+ txFilters.budget=s.value;
+}
+
+function getFilteredTransactions(){
+ return state.tx.filter(t=>{
+   if(txFilters.from && (!t.date || t.date<txFilters.from)) return false;
+   if(txFilters.to && (!t.date || t.date>txFilters.to)) return false;
+   if(txFilters.budget && t.budget!==txFilters.budget) return false;
+   return true;
+ });
+}
+
 function renderTx(){
  const box=document.getElementById("txList");
- if(!state.tx.length){box.innerHTML='<div class="muted">Belum ada transaksi.</div>';return}
- box.innerHTML=state.tx.map(t=>{
+ const count=document.getElementById("txFilterCount");
+ fillTxBudgetFilter();
+ const filtered=getFilteredTransactions();
+
+ if(count){
+   count.textContent=(filtered.length===state.tx.length)
+     ? `${state.tx.length} transaksi`
+     : `Menampilkan ${filtered.length} dari ${state.tx.length} transaksi`;
+ }
+ if(!filtered.length){
+   box.innerHTML='<div class="muted">Tidak ada transaksi yang sesuai filter.</div>';
+   return;
+ }
+ box.innerHTML=filtered.map(t=>{
    const sign=t.kind==="income"?"+":t.kind==="expense"?"-":"", cls=t.kind, detail=t.kind==="transfer"?esc(t.account)+" → "+esc(t.to):esc(t.account)+(t.budget?" · "+esc(t.budget):"");
    return `<div class="tx"><div><b>${esc(t.note)}</b><br><small>${dateID(t.date)} · ${detail}</small></div><div class="txBtns"><b class="${cls}">${sign} ${rp(t.amount)}</b><button class="mini secondary" data-edit="${t.id}">✏️</button><button class="mini danger" data-delete="${t.id}">🗑️</button></div></div>`;
  }).join("");
@@ -278,6 +340,23 @@ openingForm.onsubmit=e=>{e.preventDefault();document.querySelectorAll(".openingI
 function openTransfer(t=null){editingTransferId=t?t.id:null;fillAccounts(trFrom);fillAccounts(trTo);trAmount.value=t?money(t.amount):"";trNote.value=t&&t.note!=="Transfer antar akun"?t.note:"";trFrom.value=t?state.accounts.findIndex(a=>a.name===t.account):0;trTo.value=t?state.accounts.findIndex(a=>a.name===t.to):1;show("transferModal")}
 btnTransfer.onclick=()=>openTransfer();transferClose.onclick=()=>hide("transferModal");transferCancel.onclick=()=>hide("transferModal");trAmount.oninput=()=>trAmount.value=money(trAmount.value);
 transferForm.onsubmit=e=>{e.preventDefault();const amount=parseMoney(trAmount.value),f=+trFrom.value,to=+trTo.value;if(!amount)return alert("Masukkan nominal yang valid.");if(f===to)return alert("Pilih akun yang berbeda.");if(editingTransferId){const t=state.tx.find(x=>x.id===editingTransferId),oldF=state.accounts.findIndex(a=>a.name===t.account),oldTo=state.accounts.findIndex(a=>a.name===t.to);if(oldF>=0)state.accounts[oldF].balance+=t.amount;if(oldTo>=0)state.accounts[oldTo].balance-=t.amount;if(state.accounts[f].balance<amount)return alert("Saldo tidak cukup.");state.accounts[f].balance-=amount;state.accounts[to].balance+=amount;t.amount=amount;t.account=state.accounts[f].name;t.to=state.accounts[to].name;t.note=trNote.value.trim()||"Transfer antar akun";t.date=t.date||today()}else{if(state.accounts[f].balance<amount)return alert("Saldo tidak cukup.");state.accounts[f].balance-=amount;state.accounts[to].balance+=amount;state.tx.unshift({id:crypto.randomUUID(),kind:"transfer",amount,date:today(),note:trNote.value.trim()||"Transfer antar akun",account:state.accounts[f].name,to:state.accounts[to].name})}hide("transferModal");render()};
+
+document.getElementById("txFilterFrom").onchange=e=>{
+  txFilters.from=e.target.value; renderTx();
+};
+document.getElementById("txFilterTo").onchange=e=>{
+  txFilters.to=e.target.value; renderTx();
+};
+document.getElementById("txFilterBudget").onchange=e=>{
+  txFilters.budget=e.target.value; renderTx();
+};
+document.getElementById("txFilterReset").onclick=()=>{
+  txFilters.from="";txFilters.to="";txFilters.budget="";
+  document.getElementById("txFilterFrom").value="";
+  document.getElementById("txFilterTo").value="";
+  document.getElementById("txFilterBudget").value="";
+  renderTx();
+};
 
 txList.onclick=e=>{
  const edit=e.target.closest("[data-edit]"),del=e.target.closest("[data-delete]");
