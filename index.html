@@ -37,7 +37,7 @@ section{margin-top:22px}h2{font-size:17px;color:#405579}.grid{display:grid;grid-
 <h1>BudgetKu 💰</h1><div class="muted">Keuangan keluarga, lebih rapi, terarah, dan terkontrol. 🩵🩷</div>
 <div class="hero"><span>Total seluruh saldo</span><b id="total">Rp0</b><small id="summary">9 akun · 0 transaksi</small></div>
 <div class="actions"><button class="primary" onclick="openTx('expense')">＋ Pengeluaran</button><button class="secondary" onclick="openTx('income')">＋ Pemasukan</button></div><button class="secondary" style="width:100%;margin-top:10px" onclick="openOpening()">💰 Atur Saldo Awal Rekening & E-wallet</button><section><div class="budgetBox">
-<div class="budgetTop"><span class="budgetTitle">🩵 Budget BRI Simpedes","Simpanan Simpedes</span><span class="budgetTotal">Rp4.500.000 / bulan</span></div>
+<div class="budgetTop"><span class="budgetTitle">🩵 Budget BRI Simpedes</span><span class="budgetTotal">Rp4.500.000 / bulan</span></div>
 <div class="progress"><i id="budgetProgress" style="width:0%"></i></div>
 <div class="tiny" id="budgetSummary">Memuat ringkasan budget...</div>
 <div id="budgetRows"></div>
@@ -74,7 +74,10 @@ section{margin-top:22px}h2{font-size:17px;color:#405579}.grid{display:grid;grid-
 <div class="modal" id="tm"><div class="sheet"><h2>Transfer antar akun</h2><form onsubmit="saveTr(event)"><label>Nominal</label><input id="ta" type="number" min="1" required><label>Dari</label><select id="from"></select><label>Ke</label><select id="to"></select><label>Catatan</label><input id="tn" placeholder="Opsional"><div class="row"><button type="button" class="secondary" onclick="closeT()">Batal</button><button class="primary">Transfer</button></div></form></div></div>
 
 <script>
-const A=[{name:"BRI Simpedes",type:"bank",balance:0},{name:"BRI Junio",type:"bank",balance:0},{name:"Jenius Kontrakan",type:"bank",balance:0},{name:"Jenius Dana Darurat",type:"bank",balance:0},{name:"Mandiri",type:"bank",balance:0},{name:"SeaBank",type:"bank",balance:0},{name:"ShopeePay",type:"ewallet",balance:0},{name:"GoPay",type:"ewallet",balance:0},{name:"OVO",type:"ewallet",balance:0}];const K="budgetku_live";let S=JSON.parse(localStorage.getItem(K)||"null")||{accounts:A,tx:[]};
+const A=[{name:"BRI Simpedes",type:"bank",balance:0},{name:"Simpanan Simpedes",type:"bank",balance:0},{name:"BRI Junio",type:"bank",balance:0},{name:"Jenius Kontrakan",type:"bank",balance:0},{name:"Jenius Dana Darurat",type:"bank",balance:0},{name:"Mandiri",type:"bank",balance:0},{name:"SeaBank",type:"bank",balance:0},{name:"ShopeePay",type:"ewallet",balance:0},{name:"GoPay",type:"ewallet",balance:0},{name:"OVO",type:"ewallet",balance:0}];const K="budgetku_live";let S=JSON.parse(localStorage.getItem(K)||"null")||{accounts:A,tx:[]};
+if(!S.accounts.some(a=>a.name==="Simpanan Simpedes")){
+  S.accounts.splice(1,0,{name:"Simpanan Simpedes",type:"bank",balance:0});
+}
 const rp=n=>new Intl.NumberFormat("id-ID",{style:"currency",currency:"IDR",maximumFractionDigits:0}).format(n||0);
 
 const BUDGETS=[
