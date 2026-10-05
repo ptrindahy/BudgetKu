@@ -71,7 +71,31 @@ h1{margin:0;font-size:30px;color:#3d6688}.sub{margin:4px 0 16px;color:#7b8794;fo
   .targetBottom{font-size:9px}
 }
 
-</style></head>
+</style>
+<style>
+/* Saldo rekening/e-wallet: donut percentage chart */
+.saldoDonutWrap{position:relative;width:185px;height:185px;margin:14px auto 18px}
+.saldoDonut{width:185px;height:185px;border-radius:50%;background:#edf2f8}
+.saldoDonut:after{content:"";position:absolute;inset:48px;border-radius:50%;background:rgba(255,255,255,.96)}
+.saldoDonutCenter{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;z-index:2;text-align:center;padding:0 48px;font-size:14px;font-weight:800;color:#40516f;line-height:1.25}
+.saldoLegend{display:grid;grid-template-columns:1fr 1fr;gap:7px 12px}
+.saldoLegendRow{display:flex;align-items:center;justify-content:space-between;gap:7px;min-width:0;font-size:9px;color:#68758b}
+.saldoLegendLeft{display:flex;align-items:center;gap:6px;min-width:0}
+.saldoDot{width:9px;height:9px;border-radius:50%;flex:none}
+.saldoName{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.saldoPct{font-weight:800;color:#7a6680;white-space:nowrap;text-align:right}
+.saldoEmpty{text-align:center;color:#8b95a8;font-size:11px;padding:8px}
+@media(max-width:560px){
+  .saldoDonutWrap{width:135px;height:135px}
+  .saldoDonut{width:135px;height:135px}
+  .saldoDonut:after{inset:35px}
+  .saldoDonutCenter{font-size:10px;padding:0 34px}
+  .saldoLegend{gap:6px 8px}
+  .saldoLegendRow{font-size:8.5px}
+  .saldoDot{width:7px;height:7px}
+}
+</style>
+</head>
 <body>
 <div class="wrap">
 <div class="hero"><h1>BudgetKu 💰</h1><div class="sub">Keuangan keluarga, lebih rapi, terarah, dan terkontrol. 🩵🩷</div><div class="muted" id="summary"></div><div class="total" id="total">Rp0</div>
@@ -302,4 +326,65 @@ render();
   });
 })();
 
-</script></body></html>
+</script>
+<script>
+function renderSaldoDonut(){
+  const donut=document.getElementById("saldoDonut");
+  const center=document.getElementById("saldoDonutCenter");
+  const legend=document.getElementById("saldoLegend");
+  if(!donut||!center||!legend)return;
+
+  let list=[];
+  try{
+    if(typeof state!=="undefined" && Array.isArray(state.accounts)) list=state.accounts;
+  }catch(e){}
+
+  const rows=list.map(a=>({
+    name:a.name||"Akun",
+    balance:Number(a.balance)||0
+  })).filter(x=>x.balance>0);
+
+  const total=rows.reduce((s,x)=>s+x.balance,0);
+  if(!total){
+    donut.style.background="#edf2f8";
+    center.textContent="Rp0";
+    legend.innerHTML='<div class="saldoEmpty">Belum ada saldo pada rekening/e-wallet.</div>';
+    return;
+  }
+
+  const palette=["#8fc9f3","#f2a9c9","#b8afe9","#9ed9c0","#f5c98b","#9bbfea","#dfabd0","#9fd4d5","#c8b8ed","#efb5a5"];
+  let angle=0, stops=[];
+  rows.forEach((r,i)=>{
+    const deg=(r.balance/total)*360;
+    stops.push(`${palette[i%palette.length]} ${angle}deg ${angle+deg}deg`);
+    angle+=deg;
+  });
+  donut.style.background=`conic-gradient(${stops.join(",")})`;
+  center.textContent="Rp"+total.toLocaleString("id-ID");
+
+  legend.innerHTML=rows.map((r,i)=>{
+    const pct=r.balance/total*100;
+    return `<div class="saldoLegendRow">
+      <div class="saldoLegendLeft">
+        <span class="saldoDot" style="background:${palette[i%palette.length]}"></span>
+        <span class="saldoName">${typeof esc==="function"?esc(r.name):r.name}</span>
+      </div>
+      <span class="saldoPct">${formatSaldoMoney(r.balance)} · ${pct.toFixed(1)}%</span>
+    </div>`;
+  }).join("");
+}
+
+document.addEventListener("DOMContentLoaded",renderSaldoDonut);
+const saldoDonutObserver=new MutationObserver(renderSaldoDonut);
+document.addEventListener("DOMContentLoaded",()=>{
+  const target=document.getElementById("saldoDonut");
+  if(target) saldoDonutObserver.observe(target.parentElement.parentElement,{childList:true,subtree:true});
+});
+</script>
+
+<script>
+function formatSaldoMoney(n){
+  return "Rp"+Number(n||0).toLocaleString("id-ID");
+}
+</script>
+</body></html>
