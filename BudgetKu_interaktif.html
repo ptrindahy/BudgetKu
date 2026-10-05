@@ -1,0 +1,37 @@
+<!doctype html><html lang="id"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>BudgetKu</title>
+<style>
+body{margin:0;background:#f7f4ef;color:#302b27;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif}.app{max-width:520px;margin:auto;padding:20px 16px 100px}
+h1{margin:5px 0;font-size:28px}.muted{color:#817970;font-size:13px}.hero{background:#8b6f52;color:white;border-radius:24px;padding:22px;margin:18px 0}.hero b{display:block;font-size:29px;margin:6px 0 2px}
+.actions{display:grid;grid-template-columns:1fr 1fr;gap:10px}button{border:0;border-radius:15px;padding:14px;font-weight:700;font-size:14px}.primary{background:#8b6f52;color:white}.secondary{background:#eee6dc;color:#302b27}
+section{margin-top:22px}h2{font-size:17px}.grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}.card{background:white;border:1px solid #e8e0d7;border-radius:18px;padding:15px}.card b{display:block;font-size:13px}.bal{font-size:17px;font-weight:750;margin-top:9px}
+.tx{background:white;padding:13px;border-bottom:1px solid #eee;display:flex;justify-content:space-between}.income{color:#587a5b}.expense{color:#a55b55}
+.modal{display:none;position:fixed;inset:0;background:#0007;align-items:flex-end}.modal.show{display:flex}.sheet{background:white;width:100%;max-width:520px;margin:auto;border-radius:24px 24px 0 0;padding:20px;box-sizing:border-box}label{display:block;font-size:12px;color:#817970;margin:12px 0 6px}input,select{width:100%;padding:13px;border:1px solid #ddd3c9;border-radius:12px;box-sizing:border-box;font-size:15px}.row{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:16px}.bottom{position:fixed;bottom:0;left:0;right:0;background:white;padding:10px;display:flex;gap:10px}.bottom button{flex:1}
+</style></head><body><div class="app">
+<h1>BudgetKu 💰</h1><div class="muted">Keuangan pribadi, lebih rapi dan terkontrol.</div>
+<div class="hero"><span>Total seluruh saldo</span><b id="total">Rp0</b><small id="summary">9 akun · 0 transaksi</small></div>
+<div class="actions"><button class="primary" onclick="openTx('expense')">＋ Pengeluaran</button><button class="secondary" onclick="openTx('income')">＋ Pemasukan</button></div>
+<section><h2>🏦 Bank</h2><div class="grid" id="bank"></div></section>
+<section><h2>💳 E-wallet</h2><div class="grid" id="ewallet"></div></section>
+<section><h2>↔️ Transfer</h2><button class="secondary" style="width:100%" onclick="openTransfer()">Transfer antar akun</button></section>
+<section><h2>🧾 Transaksi Terbaru</h2><div id="tx"></div></section>
+</div>
+<div class="bottom"><button class="primary" onclick="openTx('expense')">＋ Catat transaksi</button><button class="secondary" onclick="openTransfer()">↔ Transfer</button></div>
+
+<div class="modal" id="m"><div class="sheet"><h2 id="mt">Catat transaksi</h2><form onsubmit="saveTx(event)"><input id="kind" type="hidden"><label>Nominal</label><input id="amt" type="number" min="1" required><label>Keterangan</label><input id="note" required placeholder="Contoh: makan siang"><label>Akun</label><select id="acct"></select><div class="row"><button type="button" class="secondary" onclick="closeM()">Batal</button><button class="primary">Simpan</button></div></form></div></div>
+<div class="modal" id="tm"><div class="sheet"><h2>Transfer antar akun</h2><form onsubmit="saveTr(event)"><label>Nominal</label><input id="ta" type="number" min="1" required><label>Dari</label><select id="from"></select><label>Ke</label><select id="to"></select><label>Catatan</label><input id="tn" placeholder="Opsional"><div class="row"><button type="button" class="secondary" onclick="closeT()">Batal</button><button class="primary">Transfer</button></div></form></div></div>
+
+<script>
+const A=[{name:"BRI Simpedes",type:"bank",balance:0},{name:"BRI Junio",type:"bank",balance:0},{name:"Jenius Kontrakan",type:"bank",balance:0},{name:"Jenius Dana Darurat",type:"bank",balance:0},{name:"Mandiri",type:"bank",balance:0},{name:"SeaBank",type:"bank",balance:0},{name:"ShopeePay",type:"ewallet",balance:0},{name:"GoPay",type:"ewallet",balance:0},{name:"OVO",type:"ewallet",balance:0}];const K="budgetku_live";let S=JSON.parse(localStorage.getItem(K)||"null")||{accounts:A,tx:[]};
+const rp=n=>new Intl.NumberFormat("id-ID",{style:"currency",currency:"IDR",maximumFractionDigits:0}).format(n||0);
+function render(){let total=S.accounts.reduce((x,a)=>x+a.balance,0);document.getElementById("total").textContent=rp(total);document.getElementById("summary").textContent=S.accounts.length+" akun · "+S.tx.length+" transaksi";
+["bank","ewallet"].forEach(t=>document.getElementById(t).innerHTML=S.accounts.filter(a=>a.type==t).map(a=>`<div class="card"><b>${a.name}</b><div class="bal">${rp(a.balance)}</div></div>`).join(""));
+document.getElementById("tx").innerHTML=S.tx.length?S.tx.slice(0,10).map(t=>`<div class="tx"><span><b>${t.note}</b><br><small>${t.account}</small></span><b class="${t.kind}">${t.kind=="income"?"+":"-"} ${rp(t.amount)}</b></div>`).join(""):"<div class='muted'>Belum ada transaksi.</div>";localStorage.setItem(K,JSON.stringify(S))}
+function fill(id){document.getElementById(id).innerHTML=S.accounts.map((a,i)=>`<option value="${i}">${a.name}</option>`).join("")}
+function openTx(k){document.getElementById("kind").value=k;document.getElementById("mt").textContent=k=="income"?"＋ Pemasukan":"－ Pengeluaran";fill("acct");document.getElementById("m").classList.add("show")}
+function closeM(){document.getElementById("m").classList.remove("show")}
+function saveTx(e){e.preventDefault();let k=kind.value,n=+amt.value,i=+acct.value;S.accounts[i].balance+=k=="income"?n:-n;S.tx.unshift({kind:k,amount:n,note:note.value,account:S.accounts[i].name});render();closeM()}
+function openTransfer(){fill("from");fill("to");document.getElementById("tm").classList.add("show")}
+function closeT(){document.getElementById("tm").classList.remove("show")}
+function saveTr(e){e.preventDefault();let n=+ta.value,f=+from.value,t=+to.value;if(f==t)return alert("Pilih akun yang berbeda");if(S.accounts[f].balance<n)return alert("Saldo tidak cukup");S.accounts[f].balance-=n;S.accounts[t].balance+=n;S.tx.unshift({kind:"transfer",amount:n,note:tn.value||"Transfer antar akun",account:S.accounts[f].name+" → "+S.accounts[t].name});render();closeT()}
+render();
+</script></body></html>
