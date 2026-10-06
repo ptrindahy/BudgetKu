@@ -60,12 +60,31 @@ def normalized_database_url():
     return url
 
 
+class PostgresConnection:
+    """Small compatibility wrapper so the app can keep using SQLite-style ? placeholders."""
+    def __init__(self, conn):
+        self._conn = conn
+
+    def execute(self, sql, params=()):
+        sql = sql.replace("?", "%s")
+        return self._conn.execute(sql, params)
+
+    def commit(self):
+        return self._conn.commit()
+
+    def rollback(self):
+        return self._conn.rollback()
+
+    def close(self):
+        return self._conn.close()
+
+
 def db():
     """Return a DB-API connection for either local SQLite or production PostgreSQL."""
     if using_postgres():
         if psycopg is None:
             raise RuntimeError("DATABASE_URL is set, but psycopg is not installed.")
-        return psycopg.connect(normalized_database_url(), row_factory=dict_row)
+        return PostgresConnection(psycopg.connect(normalized_database_url(), row_factory=dict_row))
     c = sqlite3.connect(DB)
     c.row_factory = sqlite3.Row
     return c
